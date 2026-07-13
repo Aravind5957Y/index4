@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vehicle Bay Tracker v5.2</title>
+<meta name="version" content="5.2">
+<style>
+:root{
+  --bg:#0b1120;
+  --card:#151e32;
+  --border:#1e293b;
+  --text:#f1f5f9;
+  --muted:#94a3b8;
+  --accent:#3b82f6;
+  --green:#22c55e;
+  --amber:#f59e0b;
+  --blue:#06b6d4;
+  --red:#ef4444;
+  --purple:#a855f7;
+  --pink:#ec4899;
+  --orange:#f97316;
+  --shadow:0 8px 32px rgba(0,0,0,.35);
+}
+[data-theme="light"]{
+  --bg:#f8fafc;
+  --card:#ffffff;
+  --border:#e2e8f0;
+  --text:#0f172a;
+  --muted:#64748b;
+  --accent:#2563eb;
+  --green:#16a34a;
+  --amber:#d97706;
+  --blue:#0891b2;
+  --red:#dc2626;
+  --purple:#9333ea;
+  --pink:#db2777;
+  --orange:#ea580c;
+  --shadow:0 8px 32px rgba(0,0,0,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s}
+.container{max-width:1400px;margin:0 auto;padding:20px}
+.header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:12px}
+.logo-box{width:44px;height:44px;border-radius:10px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.4rem;overflow:hidden}
+.logo-box img{width:100%;height:100%;object-fit:contain}
+.brand h1{font-size:1.4rem;font-weight:800;background:linear-gradient(90deg,var(--accent),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.brand .sub{font-size:.78rem;color:var(--muted)}
+.header-ctrls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.theme-toggle{width:44px;height:44px;border-radius:10px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.2rem;transition:all .2s}
+.theme-toggle:hover{background:var(--border);transform:scale(1.05)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;text-align:center;position:relative;overflow:hidden;transition:transform .15s}
+.stat:hover{transform:translateY(-2px)}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.stat.idle::before{background:var(--green)}
+.stat.work::before{background:var(--amber)}
+.stat.done::before{background:var(--blue)}
+.stat.overdue::before{background:var(--red)}
+.stat.total::before{background:var(--purple)}
+.stat.revenue::before{background:var(--pink)}
+.stat .num{font-size:1.8rem;font-weight:800;margin-bottom:2px}
+.stat.idle .num{color:var(--green)}
+.stat.work .num{color:var(--amber)}
+.stat.done .num{color:var(--blue)}
+.stat.overdue .num{color:var(--red)}
+.stat.total .num{color:var(--purple)}
+.stat.revenue .num{color:var(--pink)}
+.stat .lbl{font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:2px solid var(--border);flex-wrap:wrap}
+.tab{padding:10px 18px;background:0 0;border:0;color:var(--muted);font-size:.88rem;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;border-radius:8px 8px 0 0;white-space:nowrap;transition:all .15s}
+.tab:hover{color:var(--text);background:rgba(128,128,128,.05)}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent);background:rgba(59,130,246,.08)}
+.pane{display:none}
+.pane.on{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.ctrls{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.inp{padding:10px 14px;border-radius:10px;border:2px solid var(--border);background:var(--card);color:var(--text);font-size:.9rem;outline:0;width:260px;transition:border-color .15s}
+.inp:focus{border-color:var(--accent)}
+.inp-sm{width:160px}
+.btn{padding:10px 18px;border-radius:10px;border:0;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{opacity:.9;transform:translateY(-1px)}
+.btn-pri{background:var(--accent);color:#fff}
+.btn-sec{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.btn-sec:hover{background:var(--border)}
+.btn-red{background:var(--red);color:#fff}
+.btn-grn{background:var(--green);color:#fff}
+.btn-amber{background:var(--amber);color:#fff}
+.btn-blue{background:var(--blue);color:#fff}
+.bays{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.bay{background:var(--card);border:2px solid var(--border);border-radius:14px;padding:14px;cursor:pointer;transition:all .15s;min-height:220px;display:flex;flex-direction:column;position:relative;user-select:none}
+.bay:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.bay.dragging{opacity:0.5;transform:scale(0.95)}
+.bay.drag-over{border-color:var(--accent);border-style:dashed}
+.bay.idle{border-color:var(--green);background:linear-gradient(145deg,var(--card),rgba(34,197,94,.04))}
+.bay.work{border-color:var(--amber);background:linear-gradient(145deg,var(--card),rgba(245,158,11,.04))}
+.bay.done{border-color:var(--blue);background:linear-gradient(145deg,var(--card),rgba(6,182,212,.04))}
+.bay.overdue{border-color:var(--red);animation:pulse 2s infinite;background:linear-gradient(145deg,var(--card),rgba(239,68,68,.04))}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.3)}50%{box-shadow:0 0 0 6px rgba(239,68,68,0)}}
+.pri-badge{position:absolute;top:0;right:0;width:0;height:0;border-style:solid;border-radius:0 12px 0 0;z-index:2}
+.pri-high{border-color:transparent var(--red) transparent transparent;border-width:0 32px 32px 0}
+.pri-medium{border-color:transparent var(--amber) transparent transparent;border-width:0 28px 28px 0}
+.pri-low{border-color:transparent var(--blue) transparent transparent;border-width:0 24px 24px 0}
+.pri-label{position:absolute;top:3px;right:5px;font-size:.6rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.02em;z-index:3}
+.bay-actions{display:flex;gap:5px;margin-bottom:8px;opacity:0;transition:opacity .15s;z-index:4;position:relative}
+.bay:hover .bay-actions{opacity:1}
+.q-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.q-btn:hover{transform:scale(1.12)}
+.q-btn.cycle:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.q-btn.close:hover{background:var(--green);color:#fff;border-color:var(--green)}
+.q-btn.msg:hover{background:var(--purple);color:#fff;border-color:var(--purple)}
+.bay-head{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.bay-days{font-size:.65rem;color:var(--red);font-weight:700}
+.bay-v{font-size:1.05rem;font-weight:700;margin-bottom:3px;word-break:break-word;flex:1}
+.bay-v.empty{color:var(--muted);font-weight:500;font-style:italic}
+.bay-cust{font-size:.78rem;color:var(--muted);margin-bottom:2px}
+.bay-phone{font-size:.72rem;color:var(--muted);margin-bottom:3px}
+.bay-tag{display:inline-block;font-size:.65rem;font-weight:700;padding:3px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px;align-self:flex-start}
+.tag-idle{background:rgba(34,197,94,.12);color:var(--green)}
+.tag-work{background:rgba(245,158,11,.12);color:var(--amber)}
+.tag-done{background:rgba(6,182,212,.12);color:var(--blue)}
+.tag-overdue{background:rgba(239,68,68,.12);color:var(--red)}
+.bay-mech{font-size:.75rem;color:var(--muted);margin-top:auto}
+.bay-time{font-size:.7rem;color:var(--muted)}
+.bay-note{font-size:.72rem;color:var(--muted);margin-top:3px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.bay-jc{font-size:.7rem;color:var(--muted);margin-bottom:2px}
+.bay-cost{font-size:.8rem;font-weight:700;color:var(--pink);margin-top:2px}
+.bay-linked{font-size:.65rem;color:var(--purple);font-weight:600;margin-bottom:2px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:100;padding:16px;backdrop-filter:blur(3px)}
+.modal.show{display:flex}
+.modal-box{background:var(--card);border-radius:18px;width:100%;max-width:580px;padding:24px;border:1px solid var(--border);max-height:92vh;overflow-y:auto}
+.modal-box h2{margin:0 0 18px;font-size:1.15rem}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg{margin-bottom:12px;position:relative}
+.fg label{display:block;font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em}
+.fg input,.fg select,.fg textarea{width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:.92rem;background:var(--bg);color:var(--text);outline:0;font-family:inherit;transition:border-color .15s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--accent)}
+.fg textarea{resize:vertical;min-height:60px}
+.sts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.sts input{display:none}
+.sts label{padding:10px 4px;border:2px solid var(--border);border-radius:10px;text-align:center;font-size:.75rem;font-weight:700;cursor:pointer;transition:all .12s;display:flex;flex-direction:column;align-items:center;gap:3px}
+.sts label:hover{border-color:var(--muted)}
+.sts input:checked+label[for="si"]{border-color:var(--green);background:rgba(34,197,94,.08);color:var(--green)}
+.sts input:checked+label[for="sw"]{border-color:var(--amber);background:rgba(245,158,11,.08);color:var(--amber)}
+.sts input:checked+label[for="sd"]{border-color:var(--blue);background:rgba(6,182,212,.08);color:var(--blue)}
+.sts input:checked+label[for="so"]{border-color:var(--red);background:rgba(239,68,68,.08);color:var(--red)}
+.sts .ico{font-size:1.1rem}
+.pri-sel{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pri-sel input{display:none}
+.pri-sel label{padding:10px 4px;border:2px solid var(--border);border-radius:10px;text-align:center;font-size:.75rem;font-weight:700;cursor:pointer;transition:all .12s}
+.pri-sel label:hover{border-color:var(--muted)}
+.pri-sel input:checked+label[for="ph"]{border-color:var(--red);background:rgba(239,68,68,.08);color:var(--red)}
+.pri-sel input:checked+label[for="pm"]{border-color:var(--amber);background:rgba(245,158,11,.08);color:var(--amber)}
+.pri-sel input:checked+label[for="pl"]{border-color:var(--blue);background:rgba(6,182,212,.08);color:var(--blue)}
+.modal-acts{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.modal-acts .btn{flex:1;justify-content:center;min-width:120px}
+.msg-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:160px;overflow-y:auto;margin-bottom:10px}
+.msg{font-size:.78rem;padding:8px 10px;border-radius:8px;margin-bottom:6px;background:var(--card);border-left:3px solid var(--accent);animation:msgIn .2s ease}
+@keyframes msgIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+.msg-time{font-size:.65rem;color:var(--muted);margin-bottom:2px;font-weight:600}
+.msg-input{display:flex;gap:8px}
+.msg-input input{flex:1;padding:8px 12px;border-radius:8px;border:2px solid var(--border);background:var(--bg);color:var(--text);outline:0;font-size:.9rem}
+.msg-input input:focus{border-color:var(--accent)}
+.msg-input button{padding:8px 16px;border-radius:8px;border:0;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;transition:opacity .15s}
+.msg-input button:hover{opacity:.9}
+.ac{position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:0 0 10px 10px;max-height:180px;overflow-y:auto;z-index:20;display:none;margin-top:-2px}
+.ac.on{display:block}
+.ac-item{padding:8px 12px;cursor:pointer;font-size:.85rem;border-bottom:1px solid var(--border);transition:all .1s}
+.ac-item:hover{background:var(--accent);color:#fff}
+.ac-item:last-child{border-bottom:0}
+.cal-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.cal-hd h2{font-size:1.25rem}
+.cal-nav{display:flex;gap:8px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-h{text-align:center;padding:10px;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase}
+.cal-cell{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px;min-height:80px;cursor:pointer;transition:all .15s;position:relative}
+.cal-cell:hover{border-color:var(--accent);transform:scale(1.02)}
+.cal-cell.off{opacity:.35}
+.cal-cell.today{border-color:var(--accent);background:rgba(59,130,246,.06)}
+.cal-cell .n{font-size:.82rem;font-weight:700;margin-bottom:4px}
+.cal-cell .stats{font-size:.65rem;display:flex;flex-direction:column;gap:2px}
+.cal-cell .st{display:flex;align-items:center;gap:3px}
+.cal-cell .dot{width:5px;height:5px;border-radius:50%}
+.cal-cell .badge{position:absolute;top:4px;right:4px;background:var(--red);color:#fff;font-size:.6rem;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.hist-srch{margin-bottom:16px}
+.hist-list{display:flex;flex-direction:column;gap:10px}
+.hist-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;transition:all .15s}
+.hist-item:hover{border-color:var(--accent)}
+.hist-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:6px}
+.hist-name{font-size:1rem;font-weight:700}
+.hist-meta{font-size:.78rem;color:var(--muted)}
+.hist-info{color:var(--muted);font-size:.8rem;margin-bottom:4px}
+.hist-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.hist-chip{background:var(--bg);padding:3px 8px;border-radius:6px;font-size:.72rem;color:var(--muted)}
+.reports{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:20px}
+.rep-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
+.rep-card h3{font-size:.85rem;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.04em}
+.chart-wrap{height:180px;display:flex;align-items:center;justify-content:center}
+canvas{max-width:100%}
+.rev-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.rev-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+.rev-box .n{font-size:1.4rem;font-weight:800;color:var(--pink)}
+.rev-box .l{font-size:.7rem;color:var(--muted);text-transform:uppercase}
+.workload-tbl{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:10px}
+.workload-tbl th{background:var(--bg);padding:8px 12px;border:1px solid var(--border);text-align:left;font-weight:700;color:var(--muted)}
+.workload-tbl td{padding:8px 12px;border:1px solid var(--border)}
+.workload-tbl tr:nth-child(even){background:rgba(128,128,128,.02)}
+.exports{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.exp-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all .15s}
+.exp-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.exp-ico{font-size:1.6rem;margin-bottom:6px}
+.exp-title{font-weight:700;font-size:.88rem;margin-bottom:2px}
+.exp-desc{font-size:.75rem;color:var(--muted)}
+.set-sect{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px}
+.set-sect h3{font-size:1rem;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.logo-prev{width:70px;height:70px;border-radius:10px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:8px;background:var(--bg);overflow:hidden}
+.logo-prev img{width:100%;height:100%;object-fit:contain}
+.bk-info{font-size:.75rem;color:var(--muted);margin-top:8px}
+.bk-info.ok{color:var(--green)}
+/* Enhanced Sound Toggle */
+.sound-toggle{display:inline-flex;align-items:center;gap:14px;padding:14px 18px;background:var(--bg);border-radius:14px;border:2px solid var(--border);cursor:pointer;transition:all .2s;user-select:none;width:fit-content}
+.sound-toggle:hover{border-color:var(--accent);box-shadow:0 0 0 4px rgba(59,130,246,.08)}
+.sound-toggle input{display:none}
+.sound-toggle .switch{width:52px;height:28px;background:var(--border);border-radius:999px;position:relative;transition:all .3s ease;flex-shrink:0;box-shadow:inset 0 2px 6px rgba(0,0,0,.15)}
+.sound-toggle .switch::after{content:'🔇';position:absolute;top:2px;left:2px;width:24px;height:24px;background:#fff;border-radius:50%;transition:all .35s cubic-bezier(.68,-0.55,.27,1.55);box-shadow:0 2px 8px rgba(0,0,0,.2);font-size:11px;display:flex;align-items:center;justify-content:center;line-height:1}
+.sound-toggle input:checked+.switch{background:linear-gradient(135deg,var(--green),#16a34a);box-shadow:inset 0 2px 6px rgba(0,0,0,.1),0 0 15px rgba(34,197,94,.25)}
+.sound-toggle input:checked+.switch::after{transform:translateX(24px);content:'🔊'}
+.sound-toggle .lbl{font-size:.9rem;font-weight:700;color:var(--text)}
+.notif-bar{position:fixed;top:20px;right:20px;z-index:300;display:flex;flex-direction:column;gap:8px;pointer-events:none;max-width:340px}
+.notif{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--red);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);display:flex;align-items:flex-start;gap:12px;animation:slideIn .35s ease;pointer-events:auto}
+.notif .icon{font-size:1.3rem;flex-shrink:0}
+.notif .text{font-size:.85rem;line-height:1.4}
+.notif .text strong{display:block;margin-bottom:2px;font-size:.9rem}
+.notif .close{margin-left:auto;background:0 0;border:0;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:0 4px;transition:color .15s}
+.notif .close:hover{color:var(--text)}
+@keyframes slideIn{from{transform:translateX(120px);opacity:0}to{transform:translateX(0);opacity:1}}
+.print-only{display:none;background:#fff;color:#1a1a1a;padding:24px}
+.print-hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #333}
+.print-logo{display:flex;align-items:center;gap:12px}
+.print-logo-img{width:50px;height:50px;object-fit:contain}
+.print-logo-txt{font-size:2rem}
+.print-co{font-size:1.3rem;font-weight:800;color:#1a1a1a}
+.print-co-sub{font-size:.8rem;color:#555}
+.print-meta{text-align:right;font-size:.82rem;color:#444;line-height:1.6}
+.print-meta b{color:#1a1a1a}
+.print-sum{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+.print-sum-box{border:1px solid #ccc;padding:8px;text-align:center;border-radius:6px}
+.print-sum-box .n{font-size:1.4rem;font-weight:800}
+.print-sum-box .l{font-size:.7rem;color:#666;text-transform:uppercase}
+.print-tbl{width:100%;border-collapse:collapse;font-size:.8rem;margin-bottom:16px}
+.print-tbl th{background:#f0f0f0;padding:6px 8px;border:1px solid #ccc;font-weight:700;text-align:left}
+.print-tbl td{padding:6px 8px;border:1px solid #ccc}
+.print-tbl tr:nth-child(even){background:#fafafa}
+.print-ft{display:flex;justify-content:space-between;margin-top:20px;padding-top:16px;border-top:1px solid #ccc}
+.print-sig{width:180px}
+.print-sig-line{border-top:1px solid #333;margin-top:30px;padding-top:4px;font-size:.75rem;color:#555}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 18px;font-weight:600;z-index:200;transform:translateY(100px);opacity:0;transition:all .3s;max-width:300px;box-shadow:var(--shadow)}
+.toast.show{transform:translateY(0);opacity:1}
+.empty{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty .ico{font-size:2.5rem;margin-bottom:10px;opacity:.5}
+::-webkit-scrollbar{width:7px;height:7px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+@media(max-width:768px){
+.bays{grid-template-columns:repeat(2,1fr)}
+.cal-grid{grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-cell{min-height:55px;padding:4px}
+.cal-cell .stats{display:none}
+.row{grid-template-columns:1fr}
+.sts{grid-template-columns:repeat(2,1fr)}
+.pri-sel{grid-template-columns:repeat(3,1fr)}
+.header{flex-direction:column;align-items:flex-start}
+.inp{width:100%}
+.stats{grid-template-columns:repeat(2,1fr)}
+.bay-actions{opacity:1}
+.notif-bar{left:10px;right:10px;max-width:none}
+}
+@media print{
+body{background:#fff!important;color:#1a1a1a!important}
+.container,.tabs,.ctrls,.modal,.toast,.notif-bar,.stats{display:none!important}
+.pane{display:none!important}
+.print-only{display:block!important}
+@page{size:A4 landscape;margin:12mm}
+}
+</style>
+<base target="_blank">
+</head>
+<body>
+
+<div class="notif-bar" id="notifBar"></div>
+
+<div class="container" id="app">
+  <div class="header">
+    <div class="brand">
+      <div class="logo-box" id="logoBox">LOGO</div>
+      <div>
+        <h1 id="coName">Vehicle Bay Tracker</h1>
+        <div class="sub" id="coSub">Workshop Management System</div>
+      </div>
+    </div>
+    <div class="header-ctrls">
+      <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="Toggle Theme">🌙</button>
+      <input type="date" class="inp inp-sm" id="datePick">
+      <button class="btn btn-sec" onclick="doPrint()">Print</button>
+      <button class="btn btn-sec" onclick="goTab('settings')">Settings</button>
+    </div>
+  </div>
+
+  <div class="stats" id="statsBox"></div>
+
+  <div class="tabs" id="tabBar">
+    <button class="tab on" onclick="goTab('dash')" data-t="dash">Dashboard</button>
+    <button class="tab" onclick="goTab('cal')" data-t="cal">Calendar</button>
+    <button class="tab" onclick="goTab('hist')" data-t="hist">History</button>
+    <button class="tab" onclick="goTab('reports')" data-t="reports">Reports</button>
+    <button class="tab" onclick="goTab('settings')" data-t="settings">Settings</button>
+  </div>
+
+  <div id="pane-dash" class="pane on">
+    <div class="ctrls">
+      <input type="text" class="inp" id="searchInp" placeholder="Search vehicle, customer, job card...">
+      <select class="inp inp-sm" id="filterStatus" onchange="renderDash()">
+        <option value="">All Status</option>
+        <option value="idle">Idle</option>
+        <option value="work">Working</option>
+        <option value="done">Complete</option>
+        <option value="overdue">Overdue</option>
+      </select>
+      <select class="inp inp-sm" id="filterMech" onchange="renderDash()">
+        <option value="">All Mechanics</option>
+      </select>
+      <select class="inp inp-sm" id="filterPriority" onchange="renderDash()">
+        <option value="">All Priorities</option>
+        <option value="high">High</option>
+        <option value="medium">Medium</option>
+        <option value="low">Low</option>
+      </select>
+      <button class="btn btn-sec" onclick="copyYesterday()">Copy Yesterday</button>
+      <button class="btn btn-sec" onclick="cloneToTomorrow()">Clone to Tomorrow</button>
+      <button class="btn btn-red" onclick="resetDay()">Reset</button>
+    </div>
+    <div class="bays" id="bayGrid"></div>
+  </div>
+
+  <div id="pane-cal" class="pane">
+    <div class="cal-hd">
+      <h2 id="calMonth">Month</h2>
+      <div class="cal-nav">
+        <button class="btn btn-sec" onclick="shiftMonth(-1)">Prev</button>
+        <button class="btn btn-sec" onclick="toToday()">Today</button>
+        <button class="btn btn-sec" onclick="shiftMonth(1)">Next</button>
+      </div>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+
+  <div id="pane-hist" class="pane">
+    <div class="hist-srch">
+      <input type="text" class="inp" id="histInp" placeholder="Search vehicle or customer..." style="width:100%;max-width:400px">
+    </div>
+    <div class="hist-list" id="histList"></div>
+  </div>
+
+  <div id="pane-reports" class="pane">
+    <div class="reports">
+      <div class="rep-card"><h3>Status Distribution</h3><div class="chart-wrap"><canvas id="cPie" width="260" height="180"></canvas></div></div>
+      <div class="rep-card"><h3>Bay Utilization</h3><div class="chart-wrap"><canvas id="cBar" width="260" height="180"></canvas></div></div>
+      <div class="rep-card"><h3>7-Day Trend</h3><div class="chart-wrap"><canvas id="cLine" width="260" height="180"></canvas></div></div>
+      <div class="rep-card"><h3>Revenue Summary</h3><div class="rev-summary" id="revSummary"></div></div>
+    </div>
+    <div class="rep-card" style="margin-top:16px;">
+      <h3>Mechanic Workload</h3>
+      <table class="workload-tbl" id="workloadTbl">
+        <thead><tr><th>Mechanic</th><th>Active Jobs</th><th>Completed</th><th>Total Revenue</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div style="font-size:.9rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:20px 0 12px">Export</div>
+    <div class="exports">
+      <div class="exp-card" onclick="expCSV()"><div class="exp-ico">&#128196;</div><div class="exp-title">Daily CSV</div><div class="exp-desc">Excel spreadsheet</div></div>
+      <div class="exp-card" onclick="expMonthCSV()"><div class="exp-ico">&#128197;</div><div class="exp-title">Monthly CSV</div><div class="exp-desc">Full month report</div></div>
+      <div class="exp-card" onclick="expJSON()"><div class="exp-ico">&#128190;</div><div class="exp-title">Save Backup</div><div class="exp-desc">JSON file</div></div>
+      <div class="exp-card" onclick="document.getElementById('fileUp').click()"><div class="exp-ico">&#128194;</div><div class="exp-title">Load Backup</div><div class="exp-desc">Restore data</div></div>
+      <div class="exp-card" onclick="expPDF()"><div class="exp-ico">&#128424;</div><div class="exp-title">PDF Report</div><div class="exp-desc">Print-ready daily</div></div>
+      <div class="exp-card" onclick="expWeeklyPDF()"><div class="exp-ico">&#128202;</div><div class="exp-title">Weekly PDF</div><div class="exp-desc">7-day report</div></div>
+    </div>
+    <input type="file" id="fileUp" accept=".json" style="display:none" onchange="impJSON(this)">
+  </div>
+
+  <div id="pane-settings" class="pane">
+    <div class="set-sect">
+      <h3>&#127970; Company Branding</h3>
+      <div class="row">
+        <div class="fg">
+          <label>Logo</label>
+          <div class="logo-prev" id="logoPrev"><span id="logoPlc">LOGO</span><img id="logoImg" style="display:none"></div>
+          <input type="file" id="logoUp" accept="image/*" onchange="upLogo(this)">
+        </div>
+        <div>
+          <div class="fg"><label>Company Name</label><input type="text" id="setCoName" onchange="saveSet()"></div>
+          <div class="fg"><label>Tagline</label><input type="text" id="setCoSub" onchange="saveSet()"></div>
+        </div>
+      </div>
+    </div>
+    <div class="set-sect">
+      <h3>&#128295; Workshop</h3>
+      <div class="row">
+        <div class="fg"><label>Overdue (days)</label><input type="number" id="setOverdue" min="1" onchange="saveSet()"></div>
+        <div class="fg">
+          <label>Total Bays</label>
+          <div style="display:flex;gap:8px;">
+            <input type="number" id="setBays" min="1" max="50" style="flex:1;">
+            <button class="btn btn-pri" onclick="applyBays()">Set</button>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="fg"><label>Default Mechanic</label><input type="text" id="setMech" onchange="saveSet()"></div>
+        <div class="fg"><label>Report Prefix</label><input type="text" id="setPrefix" onchange="saveSet()"></div>
+      </div>
+      <div class="row">
+        <div class="fg"><label>Auto Backup Interval (min, 0=off)</label><input type="number" id="setBackup" min="0" max="120" onchange="saveSet()"></div>
+        <div class="fg">
+          <label>Sound Alerts</label>
+          <label class="sound-toggle">
+            <input type="checkbox" id="setSound" onchange="saveSet()">
+            <span class="switch"></span>
+            <span class="lbl">Enable sounds</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="set-sect">
+      <h3>&#128190; Data</h3>
+      <div class="ctrls">
+        <button class="btn btn-grn" onclick="expJSON()">Save Backup</button>
+        <button class="btn btn-sec" onclick="document.getElementById('fileUp').click()">Load Backup</button>
+        <button class="btn btn-red" onclick="clearAll()">Clear All</button>
+      </div>
+      <div class="bk-info" id="bkInfo"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h2>Edit <span id="modTitle"></span></h2>
+    <div class="row">
+      <div class="fg" style="position:relative">
+        <label>Vehicle</label>
+        <input type="text" id="mVeh" placeholder="Toyota Camry" autocomplete="off">
+        <div class="ac" id="acList"></div>
+      </div>
+      <div class="fg"><label>Job Card (10 digits)</label><input type="text" id="mJC" placeholder="1234567890" inputmode="numeric" pattern="\d{10}" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"></div>
+    </div>
+    <div class="row">
+      <div class="fg"><label>Customer</label><input type="text" id="mCust" placeholder="John Smith"></div>
+      <div class="fg"><label>Phone</label><input type="tel" id="mPhone" placeholder="+1 234 567 890"></div>
+    </div>
+    <div class="row">
+      <div class="fg"><label>Gate In Time</label><input type="time" id="mGateIn" onchange="updateTAT()"></div>
+      <div class="fg"><label>TAT (Gate In + 4h)</label><input type="time" id="mTAT" readonly style="opacity:.85"></div>
+    </div>
+    <div class="row">
+      <div class="fg"><label>In Time (auto)</label><input type="time" id="mIn"></div>
+      <div class="fg"><label>Out Time</label><input type="time" id="mOut"></div>
+    </div>
+    <div class="row">
+      <div class="fg"><label>Mechanic</label><input type="text" id="mMech" placeholder="Mechanic name"></div>
+      <div class="fg"><label>In Date</label><input type="date" id="mInDate"></div>
+    </div>
+    <div class="row">
+      <div class="fg"><label>Parts Cost ($)</label><input type="number" id="mParts" min="0" step="0.01" placeholder="0.00"></div>
+      <div class="fg"><label>Labor Cost ($)</label><input type="number" id="mLabor" min="0" step="0.01" placeholder="0.00"></div>
+    </div>
+    <div class="fg">
+      <label>Priority</label>
+      <div class="pri-sel">
+        <input type="radio" name="mPri" id="ph" value="high"><label for="ph">&#128308; High</label>
+        <input type="radio" name="mPri" id="pm" value="medium"><label for="pm">&#128993; Medium</label>
+        <input type="radio" name="mPri" id="pl" value="low"><label for="pl">&#128309; Low</label>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Status</label>
+      <div class="sts">
+        <input type="radio" name="mSt" id="si" value="idle"><label for="si"><span class="ico">&#128994;</span>Idle</label>
+        <input type="radio" name="mSt" id="sw" value="work"><label for="sw"><span class="ico">&#128993;</span>Work</label>
+        <input type="radio" name="mSt" id="sd" value="done"><label for="sd"><span class="ico">&#128309;</span>Done</label>
+        <input type="radio" name="mSt" id="so" value="overdue"><label for="so"><span class="ico">&#128308;</span>Overdue</label>
+      </div>
+    </div>
+    <div class="fg">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-size:.85rem;color:var(--text)">
+        <input type="checkbox" id="mLink" style="width:auto"> &#128279; Link to next day (multi-day job)
+      </label>
+    </div>
+    <div class="fg"><label>Notes</label><textarea id="mNote" placeholder="Work description..."></textarea></div>
+    <div class="fg">
+      <label>&#128172; Activity Log / Texting</label>
+      <div class="msg-box" id="msgBox"></div>
+      <div class="msg-input">
+        <input type="text" id="msgInp" placeholder="Type update or message..." onkeypress="if(event.key==='Enter')addMsg()">
+        <button onclick="addMsg()">Send</button>
+      </div>
+    </div>
+    <div class="modal-acts">
+      <button class="btn btn-pri" onclick="saveBay()">&#128190; Save</button>
+      <button class="btn btn-grn" onclick="closeAndNew()" id="btnCloseNew" style="display:none">&#9989; Close & New</button>
+      <button class="btn btn-sec" onclick="closeMod()">Cancel</button>
+      <button class="btn btn-red" onclick="clearBay()">&#128465; Clear</button>
+    </div>
+  </div>
+</div>
+
+<div class="print-only" id="printRep">
+  <div class="print-hd">
+    <div class="print-logo">
+      <img id="pLogoImg" style="display:none" class="print-logo-img">
+      <span id="pLogoTxt" class="print-logo-txt">LOGO</span>
+      <div>
+        <div class="print-co" id="pCoName">Company</div>
+        <div class="print-co-sub" id="pCoSub">Workshop Report</div>
+      </div>
+    </div>
+    <div class="print-meta">
+      <div><b>Report:</b> <span id="pRepNum"></span></div>
+      <div><b>Date:</b> <span id="pDate"></span></div>
+      <div><b>Time:</b> <span id="pTime"></span></div>
+    </div>
+  </div>
+  <div class="print-sum" id="pSum"></div>
+  <table class="print-tbl">
+    <thead><tr><th>Bay</th><th>Job Card</th><th>Vehicle</th><th>Customer</th><th>Phone</th><th>Status</th><th>Priority</th><th>Days</th><th>Mechanic</th><th>Parts</th><th>Labor</th><th>Total</th><th>Gate In</th><th>TAT</th><th>In</th><th>Out</th><th>Notes</th></tr></thead>
+    <tbody id="pBody"></tbody>
+  </table>
+  <div style="margin-top:24px;">
+    <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:12px;color:#1a1a1a;">Bay History (Previous Jobs)</h2>
+    <table class="print-tbl">
+      <thead><tr><th>Bay</th><th>Date</th><th>Job Card</th><th>Vehicle</th><th>Customer</th><th>Status</th><th>Priority</th><th>Mechanic</th><th>Parts</th><th>Labor</th><th>Total</th><th>Notes</th></tr></thead>
+      <tbody id="pHistBody"></tbody>
+    </table>
+  </div>
+  <div class="print-ft">
+    <div class="print-sig"><div class="print-sig-line">Prepared By</div></div>
+    <div class="print-sig"><div class="print-sig-line">Approved By</div></div>
+    <div class="print-sig"><div class="print-sig-line">Customer Sign</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY = 'vbt_v5';
+const BAK = 'vbt_v5_bak';
+const DEF = {
+  coName: 'Vehicle Bay Tracker',
+  coSub: 'Workshop Management System',
+  logo: '',
+  overdueDays: 3,
+  bays: 20,
+  defMech: '',
+  prefix: 'RPT-',
+  theme: 'dark',
+  sound: true,
+  backupInterval: 30
+};
+
+let S = {
+  date: fmtDate(new Date()),
+  cal: new Date(),
+  data: {},
+  reg: {},
+  set: Object.assign({}, DEF),
+  repNum: 1,
+  bayOrder: []
+};
+let editId = null;
+let audioCtx = null;
+let backupTimer = null;
+
+function fmtDate(d) { return d.toISOString().split('T')[0]; }
+function nowHM() { const d = new Date(); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
+function calcTAT(hm) {
+  if (!hm || !/^\d{2}:\d{2}$/.test(hm)) return '';
+  const [h,m] = hm.split(':').map(Number);
+  const total = (h * 60 + m + 4 * 60) % (24 * 60);
+  return String(Math.floor(total/60)).padStart(2,'0') + ':' + String(total%60).padStart(2,'0');
+}
+function updateTAT() {
+  const g = document.getElementById('mGateIn');
+  const t = document.getElementById('mTAT');
+  if (g && t) t.value = calcTAT(g.value);
+}
+function $(id) { return document.getElementById(id); }
+function el(tag, cls, html) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (html) e.innerHTML = html;
+  return e;
+}
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+function playSound(type) {
+  if (S.set.sound === false) return;
+  try {
+    initAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+    if (type === 'success') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523, now);
+      osc.frequency.setValueAtTime(659, now + 0.1);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.start(now); osc.stop(now + 0.3);
+    } else if (type === 'error') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(200, now);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+      osc.start(now); osc.stop(now + 0.2);
+    } else if (type === 'notify') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(1100, now + 0.08);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+      osc.start(now); osc.stop(now + 0.18);
+    } else if (type === 'click') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1200, now);
+      gain.gain.setValueAtTime(0.04, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
+      osc.start(now); osc.stop(now + 0.04);
+    } else if (type === 'message') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.setValueAtTime(800, now + 0.05);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+      osc.start(now); osc.stop(now + 0.12);
+    }
+  } catch(e) {}
+}
+
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  playSound('success');
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+function notify(title, body) {
+  const bar = $('notifBar');
+  const n = el('div', 'notif');
+  n.innerHTML = '<span class="icon">&#128227;</span><div class="text"><strong>' + title + '</strong>' + body + '</div><button class="close" onclick="this.parentElement.remove()">&#215;</button>';
+  bar.appendChild(n);
+  playSound('notify');
+  setTimeout(function() { if(n.parentElement) n.remove(); }, 10000);
+}
+
+function daysBetween(a, b) {
+  if (!a || !b) return 0;
+  const x = new Date(a), y = new Date(b);
+  return Math.max(0, Math.floor((y - x) / 86400000));
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const p = JSON.parse(raw);
+      S.data = p.data || {};
+      S.reg = p.reg || {};
+      S.set = Object.assign({}, DEF, p.set || {});
+      S.repNum = p.repNum || 1;
+      S.bayOrder = p.bayOrder || [];
+    }
+  } catch (e) { console.log('load error', e); }
+}
+
+function save() {
+  try {
+    localStorage.setItem(KEY, JSON.stringify({
+      data: S.data, reg: S.reg, set: S.set, repNum: S.repNum, bayOrder: S.bayOrder
+    }));
+  } catch (e) {}
+}
+
+function autoSave() {
+  try {
+    localStorage.setItem(BAK, JSON.stringify({
+      data: S.data, reg: S.reg, set: S.set, repNum: S.repNum, bayOrder: S.bayOrder, ts: new Date().toISOString()
+    }));
+  } catch (e) {}
+  const i = $('bkInfo');
+  if (i) { i.textContent = 'Auto-saved ' + new Date().toLocaleTimeString(); i.className = 'bk-info ok'; }
+}
+
+function getDay(d) {
+  if (!S.data[d]) {
+    S.data[d] = {};
+    for (let i = 1; i <= S.set.bays; i++) S.data[d][i] = blankBay();
+  }
+  const prev = new Date(d);
+  prev.setDate(prev.getDate() - 1);
+  const prevStr = fmtDate(prev);
+  if (S.data[prevStr]) {
+    for (let i = 1; i <= S.set.bays; i++) {
+      const pb = S.data[prevStr][i];
+      if (pb && pb.linked && pb.vehicle && pb.status !== 'done') {
+        if (!S.data[d][i] || !S.data[d][i].vehicle) {
+          S.data[d][i] = JSON.parse(JSON.stringify(pb));
+          S.data[d][i].linked = true;
+          S.data[d][i].inDate = pb.inDate;
+        }
+      }
+    }
+  }
+  return S.data[d];
+}
+
+function blankBay() {
+  return { vehicle:'', jc:'', cust:'', phone:'', gateIn:'', inTime:'', outTime:'', mech:'', inDate:'', note:'', status:'idle', upd:'', priority:'medium', parts:0, labor:0, linked:false, msgs:[] };
+}
+
+function init() {
+  load();
+  $('datePick').value = S.date;
+  $('datePick').addEventListener('change', function(e) { S.date = e.target.value; renderAll(); });
+  $('searchInp').addEventListener('input', renderDash);
+  $('histInp').addEventListener('input', renderHist);
+  $('mVeh').addEventListener('input', doAC);
+  $('mVeh').addEventListener('focus', doAC);
+  $('acList').addEventListener('click', function(e) {
+    const item = e.target.closest('.ac-item');
+    if (item) pickAC(item.dataset.key);
+  });
+  document.addEventListener('click', function(e) { if (!e.target.closest('.fg')) $('acList').classList.remove('on'); });
+  $('modal').addEventListener('click', function(e) { if (e.target.id === 'modal') closeMod(); });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeMod(); });
+  if (S.set.theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  updateThemeIcon();
+  applySet();
+  renderAll();
+  autoSave();
+  setInterval(autoSave, 300000);
+  setupAutoBackup();
+  checkOverdue();
+  setInterval(checkOverdue, 60000);
+}
+
+function setupAutoBackup() {
+  if (backupTimer) clearInterval(backupTimer);
+  if (S.set.backupInterval > 0) {
+    backupTimer = setInterval(function() {
+      if (Object.keys(S.data).length > 0) autoBackupFile();
+    }, S.set.backupInterval * 60000);
+  }
+}
+
+function updateThemeIcon() {
+  const btn = $('themeBtn');
+  if (btn) btn.textContent = S.set.theme === 'light' ? '☀️' : '🌙';
+}
+
+function toggleTheme() {
+  S.set.theme = S.set.theme === 'light' ? 'dark' : 'light';
+  if (S.set.theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  else document.documentElement.removeAttribute('data-theme');
+  save();
+  updateThemeIcon();
+  playSound('click');
+}
+
+function applySet() {
+  $('coName').textContent = S.set.coName;
+  $('coSub').textContent = S.set.coSub;
+  $('setCoName').value = S.set.coName;
+  $('setCoSub').value = S.set.coSub;
+  $('setOverdue').value = S.set.overdueDays;
+  $('setBays').value = S.set.bays;
+  $('setMech').value = S.set.defMech || '';
+  $('setPrefix').value = S.set.prefix;
+  $('setSound').checked = S.set.sound !== false;
+  $('setBackup').value = S.set.backupInterval || 0;
+  if (S.set.logo) {
+    $('logoBox').innerHTML = '<img src="' + S.set.logo + '">';
+    $('logoImg').src = S.set.logo;
+    $('logoImg').style.display = 'block';
+    $('logoPlc').style.display = 'none';
+  }
+}
+
+function saveSet() {
+  S.set.coName = $('setCoName').value || DEF.coName;
+  S.set.coSub = $('setCoSub').value || DEF.coSub;
+  S.set.overdueDays = parseInt($('setOverdue').value) || 3;
+  S.set.defMech = $('setMech').value;
+  S.set.prefix = $('setPrefix').value || DEF.prefix;
+  S.set.sound = $('setSound').checked;
+  S.set.backupInterval = parseInt($('setBackup').value) || 0;
+  save();
+  applySet();
+  setupAutoBackup();
+  toast('Settings saved');
+}
+
+function applyBays() {
+  const newBays = Math.min(50, Math.max(1, parseInt($('setBays').value) || 20));
+  const oldBays = S.set.bays;
+  if (newBays === oldBays) { toast('Bay count unchanged'); return; }
+  if (newBays < oldBays) {
+    let hasData = false;
+    for (let date in S.data) {
+      for (let i = newBays + 1; i <= oldBays; i++) {
+        if (S.data[date][i] && S.data[date][i].vehicle) { hasData = true; break; }
+      }
+      if (hasData) break;
+    }
+    if (hasData && !confirm('Reducing bays will PERMANENTLY DELETE data from bays #' + String(newBays+1).padStart(2,'0') + ' to #' + String(oldBays).padStart(2,'0') + ' across ALL dates. Continue?')) return;
+    for (let date in S.data) {
+      for (let i = oldBays; i > newBays; i--) {
+        delete S.data[date][i];
+      }
+    }
+    S.bayOrder = S.bayOrder.filter(function(b) { return b <= newBays; });
+  } else {
+    for (let date in S.data) {
+      for (let i = oldBays + 1; i <= newBays; i++) {
+        if (!S.data[date][i]) S.data[date][i] = blankBay();
+      }
+    }
+  }
+  S.set.bays = newBays;
+  save();
+  renderAll();
+  playSound('success');
+  toast('Workshop set to ' + newBays + ' bays');
+}
+
+function upLogo(inp) {
+  const f = inp.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = function(e) {
+    S.set.logo = e.target.result;
+    save();
+    applySet();
+    toast('Logo uploaded');
+  };
+  r.readAsDataURL(f);
+}
+
+function clearAll() {
+  if (!confirm('Delete ALL data forever?')) return;
+  S.data = {}; S.reg = {}; S.repNum = 1; S.bayOrder = [];
+  save();
+  renderAll();
+  toast('All data cleared');
+}
+
+function autoBackupFile() {
+  const data = JSON.stringify({ data: S.data, reg: S.reg, set: S.set, repNum: S.repNum, bayOrder: S.bayOrder }, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'auto_backup_' + fmtDate(new Date()) + '_' + new Date().toLocaleTimeString().replace(/:/g,'-') + '.json';
+  a.click();
+  toast('Auto-backup saved');
+}
+
+function checkOverdue() {
+  const d = getDay(S.date);
+  let overCount = 0;
+  const names = [];
+  for (let i = 1; i <= S.set.bays; i++) {
+    const b = d[i] || blankBay();
+    if (b.vehicle && b.status !== 'done') {
+      const days = b.inDate ? daysBetween(b.inDate, S.date) : 0;
+      if (days > S.set.overdueDays) { overCount++; names.push(b.vehicle); }
+    }
+  }
+  if (overCount > 0) {
+    notify('Overdue Alert', overCount + ' vehicle(s) exceeded ' + S.set.overdueDays + ' days: ' + names.slice(0,3).join(', ') + (names.length>3?'...':''));
+  }
+}
+
+function renderAll() {
+  renderStats();
+  renderDash();
+  renderCal();
+  renderHist();
+  renderCharts();
+  renderMechFilter();
+}
+
+function renderStats() {
+  const d = getDay(S.date);
+  let idle = 0, work = 0, done = 0, over = 0, tot = 0, rev = 0;
+  for (let i = 1; i <= S.set.bays; i++) {
+    const b = d[i] || blankBay();
+    if (b.vehicle) tot++;
+    if (b.status === 'idle') idle++;
+    else if (b.status === 'work') work++;
+    else if (b.status === 'done') done++;
+    else if (b.status === 'overdue') over++;
+    rev += (parseFloat(b.parts) || 0) + (parseFloat(b.labor) || 0);
+  }
+  const box = $('statsBox');
+  box.innerHTML = '';
+  const mk = function(cls, n, l) {
+    const s = el('div', 'stat ' + cls);
+    s.innerHTML = '<div class="num">' + n + '</div><div class="lbl">' + l + '</div>';
+    box.appendChild(s);
+  };
+  mk('idle', idle, 'Idle');
+  mk('work', work, 'Working');
+  mk('done', done, 'Complete');
+  mk('overdue', over, 'Overdue');
+  mk('total', tot, 'Total');
+  mk('revenue', '$' + rev.toFixed(0), 'Revenue');
+}
+
+function renderMechFilter() {
+  const sel = $('filterMech');
+  const current = sel.value;
+  const mechs = new Set();
+  Object.values(S.data).forEach(function(day) {
+    Object.values(day).forEach(function(b) { if (b.mech) mechs.add(b.mech); });
+  });
+  sel.innerHTML = '<option value="">All Mechanics</option>';
+  Array.from(mechs).sort().forEach(function(m) {
+    const opt = document.createElement('option');
+    opt.value = m; opt.textContent = m;
+    sel.appendChild(opt);
+  });
+  sel.value = current;
+}
+
+function renderDash() {
+  const g = $('bayGrid');
+  const term = ($('searchInp').value || '').toLowerCase();
+  const fStatus = $('filterStatus').value;
+  const fMech = $('filterMech').value;
+  const fPriority = $('filterPriority').value;
+  const d = getDay(S.date);
+  g.innerHTML = '';
+  let order = S.bayOrder.slice(0, S.set.bays);
+  const needed = [];
+  for (let i = 1; i <= S.set.bays; i++) if (!order.includes(i)) needed.push(i);
+  order = order.concat(needed);
+  if (order.length > S.set.bays) order = order.slice(0, S.set.bays);
+  order.forEach(function(i) {
+    const b = d[i] || blankBay();
+    if (term && !b.vehicle.toLowerCase().includes(term) && !b.cust.toLowerCase().includes(term) && !b.jc.toLowerCase().includes(term) && !String(i).includes(term)) return;
+    if (fStatus && b.status !== fStatus) return;
+    if (fMech && b.mech !== fMech) return;
+    if (fPriority && b.priority !== fPriority) return;
+    const days = b.inDate ? daysBetween(b.inDate, S.date) : 0;
+    const isOver = b.vehicle && b.status !== 'done' && days > S.set.overdueDays;
+    const st = isOver ? 'overdue' : (b.status || 'idle');
+    const c = el('div', 'bay ' + st);
+    c.draggable = true;
+    c.dataset.bay = i;
+    c.addEventListener('dragstart', function(e) {
+      c.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', i);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    c.addEventListener('dragend', function() { c.classList.remove('dragging'); });
+    c.addEventListener('dragover', function(e) { e.preventDefault(); c.classList.add('drag-over'); });
+    c.addEventListener('dragleave', function() { c.classList.remove('drag-over'); });
+    c.addEventListener('drop', function(e) {
+      e.preventDefault();
+      c.classList.remove('drag-over');
+      const from = parseInt(e.dataTransfer.getData('text/plain'));
+      const to = parseInt(c.dataset.bay);
+      if (from !== to) swapBays(from, to);
+    });
+    c.onclick = function(e) {
+      if (e.target.closest('.q-btn')) return;
+      openMod(i);
+    };
+    const v = b.vehicle || '<span class="empty">Empty Bay</span>';
+    const daysHtml = (b.vehicle && b.status !== 'done' && days > 0) ? '<span class="bay-days">' + days + 'd</span>' : '';
+    let priHtml = '';
+    if (b.priority && b.vehicle) {
+      const pmap = { high: 'pri-high', medium: 'pri-medium', low: 'pri-low' };
+      const plmap = { high: 'H', medium: 'M', low: 'L' };
+      priHtml = '<div class="pri-badge ' + (pmap[b.priority] || '') + '"></div><div class="pri-label">' + (plmap[b.priority] || '') + '</div>';
+    }
+    let qbtns = '';
+    if (b.vehicle) {
+      qbtns = '<div class="bay-actions">' +
+        '<button class="q-btn cycle" onclick="cycleStatus(' + i + ')" title="Cycle status">&#8635;</button>' +
+        '<button class="q-btn close" onclick="closeBay(' + i + ')" title="Close job">&#10003;</button>' +
+        '<button class="q-btn msg" onclick="quickMsg(' + i + ')" title="Quick message">&#128172;</button>' +
+        '</div>';
+    }
+    const cost = (parseFloat(b.parts) || 0) + (parseFloat(b.labor) || 0);
+    c.innerHTML = priHtml + qbtns +
+      '<div class="bay-head">Bay #' + String(i).padStart(2, '0') + daysHtml + '</div>' +
+      (b.linked ? '<div class="bay-linked">&#128279; Linked</div>' : '') +
+      (b.jc ? '<div class="bay-jc">JC: ' + b.jc + '</div>' : '') +
+      '<div class="bay-v">' + v + '</div>' +
+      (b.cust ? '<div class="bay-cust">' + b.cust + '</div>' : '') +
+      (b.phone ? '<div class="bay-phone">' + b.phone + '</div>' : '') +
+      '<span class="bay-tag tag-' + st + '">' + st + '</span>' +
+      (b.mech ? '<div class="bay-mech">' + b.mech + '</div>' : '') +
+      (b.inTime || b.outTime ? '<div class="bay-time">' + (b.inTime || '--') + ' to ' + (b.outTime || '--') + '</div>' : '') +
+      (b.gateIn ? '<div class="bay-time" style="color:var(--accent);font-weight:600">Gate In: ' + b.gateIn + ' &middot; TAT: ' + calcTAT(b.gateIn) + '</div>' : '') +
+      (cost > 0 ? '<div class="bay-cost">$' + cost.toFixed(2) + '</div>' : '') +
+      (b.note ? '<div class="bay-note">' + b.note.substring(0, 40) + (b.note.length > 40 ? '...' : '') + '</div>' : '');
+    g.appendChild(c);
+  });
+}
+
+function swapBays(from, to) {
+  const idx = S.bayOrder.indexOf(from);
+  const idx2 = S.bayOrder.indexOf(to);
+  if (idx >= 0 && idx2 >= 0) {
+    S.bayOrder[idx] = to;
+    S.bayOrder[idx2] = from;
+  } else {
+    let order = S.bayOrder.slice(0, S.set.bays);
+    const needed = [];
+    for (let i = 1; i <= S.set.bays; i++) if (!order.includes(i)) needed.push(i);
+    order = order.concat(needed);
+    const i1 = order.indexOf(from), i2 = order.indexOf(to);
+    if (i1 >= 0 && i2 >= 0) {
+      const tmp = order[i1]; order[i1] = order[i2]; order[i2] = tmp;
+      S.bayOrder = order;
+    }
+  }
+  save();
+  renderDash();
+  playSound('click');
+}
+
+function cycleStatus(bayId) {
+  const d = getDay(S.date);
+  const b = d[bayId] || blankBay();
+  const cycle = { idle: 'work', work: 'done', done: 'idle', overdue: 'done' };
+  b.status = cycle[b.status] || 'idle';
+  b.upd = new Date().toISOString();
+  if (b.status === 'done') b.outTime = b.outTime || new Date().toTimeString().slice(0,5);
+  save();
+  renderAll();
+  playSound('click');
+  toast('Bay #' + String(bayId).padStart(2,'0') + ' -> ' + b.status);
+}
+
+function closeBay(bayId) {
+  const d = getDay(S.date);
+  const b = d[bayId] || blankBay();
+  if (!b.vehicle) return;
+  b.status = 'done';
+  b.outTime = new Date().toTimeString().slice(0,5);
+  b.upd = new Date().toISOString();
+  save();
+  renderAll();
+  playSound('success');
+  toast('Job completed on Bay #' + String(bayId).padStart(2,'0'));
+}
+
+function quickMsg(bayId) {
+  openMod(bayId);
+  setTimeout(function() { $('msgInp').focus(); }, 100);
+}
+
+function openMod(id) {
+  editId = id;
+  const d = getDay(S.date), b = d[id] || blankBay();
+  $('modTitle').textContent = 'Bay #' + String(id).padStart(2, '0');
+  $('mVeh').value = b.vehicle || '';
+  $('mJC').value = b.jc || '';
+  $('mCust').value = b.cust || '';
+  $('mPhone').value = b.phone || '';
+  $('mGateIn').value = b.gateIn || '';
+  $('mTAT').value = calcTAT(b.gateIn || '');
+  $('mIn').value = b.inTime || nowHM();
+  $('mOut').value = b.outTime || '';
+  $('mMech').value = b.mech || S.set.defMech || '';
+  $('mInDate').value = b.inDate || S.date;
+  $('mNote').value = b.note || '';
+  $('mParts').value = b.parts || '';
+  $('mLabor').value = b.labor || '';
+  $('mLink').checked = b.linked || false;
+  const rp = document.querySelector('input[name="mPri"][value="' + (b.priority || 'medium') + '"]');
+  if (rp) rp.checked = true;
+  const rs = document.querySelector('input[name="mSt"][value="' + (b.status || 'idle') + '"]');
+  if (rs) rs.checked = true;
+  $('btnCloseNew').style.display = (b.vehicle && b.status !== 'done') ? 'inline-flex' : 'none';
+  renderMsgs(b.msgs || []);
+  $('modal').classList.add('show');
+  $('acList').classList.remove('on');
+  playSound('click');
+}
+
+function closeMod() {
+  $('modal').classList.remove('show');
+  editId = null;
+}
+
+function renderMsgs(msgs) {
+  const box = $('msgBox');
+  box.innerHTML = '';
+  if (!msgs || !msgs.length) {
+    box.innerHTML = '<div style="color:var(--muted);font-size:.78rem;text-align:center;padding:10px;">No activity yet. Send updates below.</div>';
+    return;
+  }
+  msgs.forEach(function(m) {
+    const d = el('div', 'msg');
+    d.innerHTML = '<div class="msg-time">' + new Date(m.time).toLocaleString() + '</div>' + escapeHtml(m.text);
+    box.appendChild(d);
+  });
+  box.scrollTop = box.scrollHeight;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function addMsg() {
+  if (!editId) return;
+  const inp = $('msgInp');
+  const text = inp.value.trim();
+  if (!text) return;
+  const d = getDay(S.date);
+  const b = d[editId];
+  if (!b.msgs) b.msgs = [];
+  b.msgs.push({ time: new Date().toISOString(), text: text });
+  inp.value = '';
+  renderMsgs(b.msgs);
+  save();
+  playSound('message');
+}
+
+function saveBay() {
+  if (!editId) return;
+  const jcVal = $('mJC').value.trim();
+  const vehVal = $('mVeh').value.trim();
+  if (vehVal && jcVal && !/^\d{10}$/.test(jcVal)) {
+    playSound('error');
+    toast('Job Card must be exactly 10 digits');
+    $('mJC').focus();
+    return;
+  }
+  const d = getDay(S.date);
+  const old = d[editId] || blankBay();
+  const msgs = old.msgs || [];
+  d[editId] = {
+    vehicle: vehVal,
+    jc: jcVal,
+    cust: $('mCust').value.trim(),
+    phone: $('mPhone').value.trim(),
+    gateIn: $('mGateIn').value,
+    inTime: $('mIn').value,
+    outTime: $('mOut').value,
+    mech: $('mMech').value.trim(),
+    inDate: $('mInDate').value,
+    note: $('mNote').value.trim(),
+    status: document.querySelector('input[name="mSt"]:checked') ? document.querySelector('input[name="mSt"]:checked').value : 'idle',
+    priority: document.querySelector('input[name="mPri"]:checked') ? document.querySelector('input[name="mPri"]:checked').value : 'medium',
+    parts: parseFloat($('mParts').value) || 0,
+    labor: parseFloat($('mLabor').value) || 0,
+    linked: $('mLink').checked,
+    msgs: msgs,
+    upd: new Date().toISOString()
+  };
+  const v = d[editId].vehicle;
+  if (v) {
+    const k = v + (d[editId].cust ? ' (' + d[editId].cust + ')' : '');
+    if (!S.reg[k]) S.reg[k] = { first: S.date, count: 0, hist: [], cust: d[editId].cust, phone: d[editId].phone };
+    S.reg[k].last = S.date;
+    S.reg[k].count++;
+    S.reg[k].hist.push({
+      date: S.date, bay: editId, status: d[editId].status, mech: d[editId].mech,
+      note: d[editId].note, jc: d[editId].jc, cust: d[editId].cust, phone: d[editId].phone,
+      priority: d[editId].priority, parts: d[editId].parts, labor: d[editId].labor
+    });
+  }
+  save();
+  renderAll();
+  closeMod();
+  toast('Saved!');
+}
+
+function closeAndNew() {
+  if (!editId) return;
+  const d = getDay(S.date);
+  const b = d[editId];
+  if (!b || !b.vehicle) return;
+  b.status = 'done';
+  b.outTime = new Date().toTimeString().slice(0,5);
+  b.upd = new Date().toISOString();
+  const v = b.vehicle;
+  if (v) {
+    const k = v + (b.cust ? ' (' + b.cust + ')' : '');
+    if (!S.reg[k]) S.reg[k] = { first: S.date, count: 0, hist: [], cust: b.cust, phone: b.phone };
+    S.reg[k].last = S.date;
+    S.reg[k].count++;
+    S.reg[k].hist.push({
+      date: S.date, bay: editId, status: 'done', mech: b.mech,
+      note: b.note, jc: b.jc, cust: b.cust, phone: b.phone,
+      priority: b.priority, parts: b.parts, labor: b.labor
+    });
+  }
+  d[editId] = blankBay();
+  save();
+  renderAll();
+  closeMod();
+  toast('Job closed. Bay ready for new vehicle!');
+  playSound('success');
+}
+
+function clearBay() {
+  if (!editId) return;
+  getDay(S.date)[editId] = blankBay();
+  save();
+  renderAll();
+  closeMod();
+  toast('Cleared');
+}
+
+function doAC() {
+  const inp = $('mVeh'), list = $('acList'), t = (inp.value || '').toLowerCase();
+  const keys = Object.keys(S.reg).filter(function(k) {
+    return k.toLowerCase().includes(t);
+  }).sort(function(a, b) {
+    return S.reg[b].count - S.reg[a].count;
+  }).slice(0, 6);
+  if (!keys.length) { list.classList.remove('on'); return; }
+  list.innerHTML = keys.map(function(k) {
+    return '<div class="ac-item" data-key="' + k.replace(/"/g, '&quot;') + '">' + k + ' <span style="opacity:.5">(' + S.reg[k].count + 'x)</span></div>';
+  }).join('');
+  list.classList.add('on');
+}
+
+function pickAC(k) {
+  $('mVeh').value = k;
+  $('acList').classList.remove('on');
+  const r = S.reg[k];
+  if (!r) return;
+  if (r.cust) $('mCust').value = r.cust;
+  if (r.phone) $('mPhone').value = r.phone;
+  if (r.hist && r.hist.length) {
+    const l = r.hist[r.hist.length - 1];
+    if (l.mech) $('mMech').value = l.mech;
+    if (l.priority) {
+      const rp = document.querySelector('input[name="mPri"][value="' + l.priority + '"]');
+      if (rp) rp.checked = true;
+    }
+  }
+}
+
+function renderCal() {
+  const y = S.cal.getFullYear(), m = S.cal.getMonth();
+  $('calMonth').textContent = S.cal.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
+  const g = $('calGrid');
+  g.innerHTML = '';
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(function(d) {
+    const h = el('div', 'cal-h'); h.textContent = d; g.appendChild(h);
+  });
+  const fd = new Date(y, m, 1).getDay(), dim = new Date(y, m + 1, 0).getDate(), today = fmtDate(new Date());
+  const pd = new Date(y, m, 0).getDate();
+  for (let i = fd - 1; i >= 0; i--) {
+    const c = el('div', 'cal-cell off');
+    c.innerHTML = '<div class="n">' + (pd - i) + '</div>';
+    g.appendChild(c);
+  }
+  for (let d = 1; d <= dim; d++) {
+    const ds = String(y) + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const day = S.data[ds];
+    let w = 0, ok = 0, od = 0;
+    if (day) {
+      Object.values(day).forEach(function(b) {
+        if (b.status === 'work') w++;
+        else if (b.status === 'done') ok++;
+        else if (b.status === 'overdue') od++;
+      });
+    }
+    const c = el('div', 'cal-cell' + (ds === today ? ' today' : ''));
+    c.onclick = function() { S.date = ds; $('datePick').value = ds; goTab('dash'); };
+    let s = '';
+    if (w) s += '<div class="st"><span class="dot" style="background:var(--amber)"></span>' + w + ' work</div>';
+    if (ok) s += '<div class="st"><span class="dot" style="background:var(--blue)"></span>' + ok + ' done</div>';
+    if (od) s += '<div class="st"><span class="dot" style="background:var(--red)"></span>' + od + ' overdue</div>';
+    c.innerHTML = '<div class="n">' + d + '</div><div class="stats">' + s + '</div>' + (od ? '<div class="badge">' + od + '</div>' : '');
+    g.appendChild(c);
+  }
+  const rem = (7 - ((fd + dim) % 7)) % 7;
+  for (let i = 1; i <= rem; i++) {
+    const c = el('div', 'cal-cell off');
+    c.innerHTML = '<div class="n">' + i + '</div>';
+    g.appendChild(c);
+  }
+}
+
+function shiftMonth(n) { S.cal.setMonth(S.cal.getMonth() + n); renderCal(); }
+function toToday() { S.cal = new Date(); renderCal(); }
+
+function renderHist() {
+  const t = ($('histInp').value || '').toLowerCase(), box = $('histList');
+  box.innerHTML = '';
+  const items = Object.entries(S.reg).filter(function(entry) {
+    const k = entry[0], v = entry[1];
+    return !t || k.toLowerCase().includes(t) || (v.cust && v.cust.toLowerCase().includes(t));
+  }).sort(function(a, b) { return new Date(b[1].last) - new Date(a[1].last); });
+  if (!items.length) {
+    box.innerHTML = '<div class="empty"><div class="ico">&#128236;</div><div>No history yet. Track vehicles in Dashboard.</div></div>';
+    return;
+  }
+  items.forEach(function(entry) {
+    const k = entry[0], v = entry[1];
+    const l = v.hist[v.hist.length - 1];
+    const item = el('div', 'hist-item');
+    const rev = v.hist.reduce(function(s, h) { return s + (parseFloat(h.parts)||0) + (parseFloat(h.labor)||0); }, 0);
+    item.innerHTML = '<div class="hist-hd"><div class="hist-name">' + k + '</div><div class="hist-meta">' + v.count + ' visits | $' + rev.toFixed(2) + '</div></div>' +
+      '<div class="hist-info">' + (v.cust || 'N/A') + (v.phone ? ' | ' + v.phone : '') + '</div>' +
+      '<div class="hist-info">Last: ' + v.last + ' | Bay #' + String(l.bay).padStart(2, '0') + ' | ' + l.status + (l.jc ? ' | ' + l.jc : '') + (l.priority ? ' | ' + l.priority : '') + '</div>' +
+      '<div class="hist-chips">' + v.hist.slice(-5).map(function(h) {
+        return '<span class="hist-chip">' + h.date + ' | #' + String(h.bay).padStart(2, '0') + ' | ' + h.status + '</span>';
+      }).join('') + '</div>';
+    box.appendChild(item);
+  });
+}
+
+function renderCharts() {
+  const d = getDay(S.date), c = { idle: 0, work: 0, done: 0, overdue: 0 }, bt = {};
+  let totalRev = 0, mechData = {};
+  for (let i = 1; i <= S.set.bays; i++) {
+    const b = d[i] || blankBay();
+    c[b.status]++;
+    bt[i] = 0;
+    totalRev += (parseFloat(b.parts) || 0) + (parseFloat(b.labor) || 0);
+    if (b.mech) {
+      if (!mechData[b.mech]) mechData[b.mech] = { active: 0, done: 0, rev: 0 };
+      if (b.status === 'done') mechData[b.mech].done++;
+      else if (b.status !== 'idle') mechData[b.mech].active++;
+      mechData[b.mech].rev += (parseFloat(b.parts) || 0) + (parseFloat(b.labor) || 0);
+    }
+  }
+  Object.values(S.data).forEach(function(day) {
+    for (let i = 1; i <= S.set.bays; i++) {
+      if (day[i] && day[i].vehicle) bt[i]++;
+    }
+  });
+  pie('cPie', [
+    { l: 'Idle', v: c.idle, c: '#22c55e' },
+    { l: 'Work', v: c.work, c: '#f59e0b' },
+    { l: 'Done', v: c.done, c: '#06b6d4' },
+    { l: 'Overdue', v: c.overdue, c: '#ef4444' }
+  ]);
+  bar('cBar', bt);
+  line('cLine');
+  const revBox = $('revSummary');
+  let monthRev = 0;
+  const y = S.cal.getFullYear(), m = String(S.cal.getMonth() + 1).padStart(2, '0');
+  Object.entries(S.data).forEach(function(entry) {
+    if (!entry[0].startsWith(y + '-' + m)) return;
+    Object.values(entry[1]).forEach(function(b) {
+      monthRev += (parseFloat(b.parts) || 0) + (parseFloat(b.labor) || 0);
+    });
+  });
+  revBox.innerHTML = '<div class="rev-box"><div class="n">$' + totalRev.toFixed(2) + '</div><div class="l">Today</div></div>' +
+    '<div class="rev-box"><div class="n">$' + monthRev.toFixed(2) + '</div><div class="l">This Month</div></div>';
+  const tbody = $('workloadTbl').querySelector('tbody');
+  tbody.innerHTML = '';
+  Object.entries(mechData).sort(function(a,b){ return b[1].rev - a[1].rev; }).forEach(function(entry) {
+    const m = entry[0], d = entry[1];
+    const tr = el('tr');
+    tr.innerHTML = '<td>' + m + '</td><td>' + d.active + '</td><td>' + d.done + '</td><td>$' + d.rev.toFixed(2) + '</td>';
+    tbody.appendChild(tr);
+  });
+  if (!Object.keys(mechData).length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted)">No mechanic data</td></tr>';
+  }
+}
+
+function pie(id, dat) {
+  const c = $(id), x = c.getContext('2d'), w = c.width, h = c.height;
+  x.clearRect(0, 0, w, h);
+  const tot = dat.reduce(function(s, d) { return s + d.v; }, 0);
+  if (!tot) { x.fillStyle = '#475569'; x.textAlign = 'center'; x.font = '13px sans-serif'; x.fillText('No data', w / 2, h / 2); return; }
+  let a = -Math.PI / 2;
+  const cx = w / 2 - 55, cy = h / 2, r = 60;
+  dat.forEach(function(d) {
+    const s = (d.v / tot) * 2 * Math.PI;
+    x.beginPath(); x.moveTo(cx, cy); x.arc(cx, cy, r, a, a + s); x.closePath();
+    x.fillStyle = d.c; x.fill();
+    x.strokeStyle = '#1e293b'; x.lineWidth = 2; x.stroke();
+    a += s;
+  });
+  let ly = 22;
+  dat.forEach(function(d) {
+    if (d.v) {
+      x.fillStyle = d.c; x.fillRect(w - 95, ly, 10, 10);
+      x.fillStyle = '#94a3b8'; x.font = '11px sans-serif'; x.textAlign = 'left';
+      x.fillText(d.l + ': ' + d.v, w - 82, ly + 9); ly += 18;
+    }
+  });
+}
+
+function bar(id, dat) {
+  const c = $(id), x = c.getContext('2d'), w = c.width, h = c.height;
+  x.clearRect(0, 0, w, h);
+  const v = Object.values(dat), mx = Math.max.apply(null, v.concat([1])), bw = (w - 30) / S.set.bays, ch = h - 35;
+  Object.entries(dat).forEach(function(entry, i) {
+    if (i >= S.set.bays) return;
+    const b = entry[0], n = entry[1];
+    const bh = (n / mx) * ch, xx = 15 + i * bw, yy = h - 25 - bh;
+    x.fillStyle = n > 0 ? '#3b82f6' : '#475569';
+    x.fillRect(xx + 1, yy, bw - 2, bh);
+    x.fillStyle = '#94a3b8'; x.font = '9px sans-serif'; x.textAlign = 'center';
+    x.fillText(b, xx + bw / 2, h - 8);
+  });
+}
+
+function line(id) {
+  const c = $('cLine'), x = c.getContext('2d'), w = c.width, h = c.height;
+  x.clearRect(0, 0, w, h);
+  const ds = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(S.date); d.setDate(d.getDate() - i); ds.push(fmtDate(d));
+  }
+  const cnt = ds.map(function(d) {
+    const day = S.data[d];
+    if (!day) return 0;
+    return Object.values(day).filter(function(b) { return b && b.vehicle && b.status !== 'idle'; }).length;
+  });
+  const mx = Math.max.apply(null, cnt.concat([1])), p = 25, cw = w - p * 2, ch = h - p * 2, st = cw / (ds.length - 1);
+  x.strokeStyle = '#334155'; x.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = p + (ch / 4) * i; x.beginPath(); x.moveTo(p, y); x.lineTo(w - p, y); x.stroke();
+  }
+  x.strokeStyle = '#3b82f6'; x.lineWidth = 3; x.beginPath();
+  cnt.forEach(function(n, i) {
+    const xx = p + i * st, yy = p + ch - (n / mx) * ch;
+    if (i === 0) x.moveTo(xx, yy); else x.lineTo(xx, yy);
+  });
+  x.stroke();
+  cnt.forEach(function(n, i) {
+    const xx = p + i * st, yy = p + ch - (n / mx) * ch;
+    x.fillStyle = '#3b82f6'; x.beginPath(); x.arc(xx, yy, 4, 0, Math.PI * 2); x.fill();
+    x.fillStyle = '#fff'; x.beginPath(); x.arc(xx, yy, 1.5, 0, Math.PI * 2); x.fill();
+  });
+  x.fillStyle = '#94a3b8'; x.font = '10px sans-serif'; x.textAlign = 'center';
+  ds.forEach(function(d, i) { x.fillText(new Date(d).getDate(), p + i * st, h - 6); });
+}
+
+function expCSV() {
+  const d = getDay(S.date);
+  let csv = 'Bay,Job Card,Vehicle,Customer,Phone,Status,Priority,Days,Mechanic,Parts,Labor,Total,In Date,Gate In,TAT,In Time,Out Time,Notes\r\n';
+  for (let i = 1; i <= S.set.bays; i++) {
+    const b = d[i] || blankBay();
+    const days = b.inDate ? daysBetween(b.inDate, S.date) : 0;
+    const total = (parseFloat(b.parts)||0) + (parseFloat(b.labor)||0);
+    csv += i + ',"' + b.jc + '","' + b.vehicle + '","' + b.cust + '","' + b.phone + '",' + b.status + ',' + (b.priority||'medium') + ',' + days + ',"' + b.mech + '",' + (b.parts||0) + ',' + (b.labor||0) + ',' + total.toFixed(2) + ',"' + b.inDate + '","' + (b.gateIn||'') + '","' + calcTAT(b.gateIn||'') + '","' + b.inTime + '","' + b.outTime + '","' + b.note + '"\r\n';
+  }
+  dl(csv, 'report_' + S.date + '.csv', 'text/csv');
+  toast('CSV exported');
+}
+
+function expMonthCSV() {
+  const y = S.cal.getFullYear(), m = String(S.cal.getMonth() + 1).padStart(2, '0');
+  let csv = 'Date,Bay,Job Card,Vehicle,Customer,Phone,Status,Priority,Mechanic,Parts,Labor,Total,In Date,Gate In,TAT,In Time,Out Time,Notes\r\n';
+  Object.entries(S.data).forEach(function(entry) {
+    const date = entry[0], day = entry[1];
+    if (!date.startsWith(y + '-' + m)) return;
+    for (let i = 1; i <= S.set.bays; i++) {
+      const b = day[i];
+      if (b && b.vehicle) {
+        const total = (parseFloat(b.parts)||0) + (parseFloat(b.labor)||0);
+        csv += date + ',' + i + ',"' + b.jc + '","' + b.vehicle + '","' + b.cust + '","' + b.phone + '",' + b.status + ',' + (b.priority||'medium') + ',"' + b.mech + '",' + (b.parts||0) + ',' + (b.labor||0) + ',' + total.toFixed(2) + ',"' + b.inDate + '","' + (b.gateIn||'') + '","' + calcTAT(b.gateIn||'') + '","' + b.inTime + '","' + b.outTime + '","' + b.note + '"\r\n';
+      }
+    }
+  });
+  if (csv.split('\r\n').length <= 2) { toast('No data for month'); return; }
+  dl(csv, 'monthly_' + y + '-' + m + '.csv', 'text/csv');
+  toast('Monthly exported');
+}
+
+function expJSON() {
+  dl(JSON.stringify({ data: S.data, reg: S.reg, set: S.set, repNum: S.repNum, bayOrder: S.bayOrder }, null, 2), 'backup_' + S.date + '.json', 'application/json');
+  toast('Backup saved');
+}
+
+function impJSON(inp) {
+  const f = inp.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = function(e) {
+    try {
+      const p = JSON.parse(e.target.result);
+      if (p.data) {
+        S.data = p.data; S.reg = p.reg || {}; S.set = Object.assign({}, DEF, p.set || {});
+        S.repNum = p.repNum || 1; S.bayOrder = p.bayOrder || [];
+        save(); applySet(); renderAll(); toast('Restored!');
+      } else { toast('Invalid file'); }
+    } catch (err) { toast('Error reading file'); }
+  };
+  r.readAsText(f); inp.value = '';
+}
+
+function dl(content, name, type) {
+  const b = new Blob([content], { type: type }), a = document.createElement('a');
+  a.href = URL.createObjectURL(b); a.download = name; a.click();
+}
+
+function doPrint() {
+  const d = getDay(S.date), num = S.set.prefix + String(S.repNum).padStart(4, '0');
+  S.repNum++; save();
+  $('pRepNum').textContent = num;
+  $('pDate').textContent = new Date(S.date).toLocaleDateString();
+  $('pTime').textContent = new Date().toLocaleTimeString();
+  $('pCoName').textContent = S.set.coName;
+  $('pCoSub').textContent = S.set.coSub;
+  if (S.set.logo) { $('pLogoImg').src = S.set.logo; $('pLogoImg').style.display = 'inline'; $('pLogoTxt').style.display = 'none'; }
+  else { $('pLogoImg').style.display = 'none'; $('pLogoTxt').style.display = 'inline'; }
+  let idle = 0, work = 0, done = 0, over = 0, tot = 0, totalRev = 0;
+  const tb = $('pBody'); tb.innerHTML = '';
+  for (let i = 1; i <= S.set.bays; i++) {
+    const b = d[i] || blankBay();
+    if (!b.vehicle) continue;
+    tot++;
+    if (b.status === 'idle') idle++; else if (b.status === 'work') work++; else if (b.status === 'done') done++; else if (b.status === 'overdue') over++;
+    const days = b.inDate ? daysBetween(b.inDate, S.date) : 0;
+    const rev = (parseFloat(b.parts)||0) + (parseFloat(b.labor)||0);
+    totalRev += rev;
+    const r = el('tr');
+    r.innerHTML = '<td>#' + String(i).padStart(2,'0') + '</td><td>' + (b.jc || '-') + '</td><td>' + b.vehicle + '</td><td>' + (b.cust || '-') + '</td><td>' + (b.phone || '-') + '</td><td>' + b.status.toUpperCase() + '</td><td>' + (b.priority || 'MEDIUM').toUpperCase() + '</td><td>' + days + '</td><td>' + (b.mech || '-') + '</td><td>$' + (b.parts || 0) + '</td><td>$' + (b.labor || 0) + '</td><td>$' + rev.toFixed(2) + '</td><td>' + (b.gateIn || '-') + '</td><td>' + (calcTAT(b.gateIn) || '-') + '</td><td>' + (b.inTime || '-') + '</td><td>' + (b.outTime || '-') + '</td><td>' + (b.note || '-') + '</td>';
+    tb.appendChild(r);
+  }
+  if (!tot) tb.innerHTML = '<tr><td colspan="17" style="text-align:center;color:#999">No vehicles for this day</td></tr>';
+  $('pSum').innerHTML = '<div class="print-sum-box"><div class="n" style="color:#22c55e">' + idle + '</div><div class="l">Idle</div></div><div class="print-sum-box"><div class="n" style="color:#f59e0b">' + work + '</div><div class="l">Working</div></div><div class="print-sum-box"><div class="n" style="color:#06b6d4">' + done + '</div><div class="l">Complete</div></div><div class="print-sum-box"><div class="n" style="color:#ef4444">' + over + '</div><div class="l">Overdue</div></div><div class="print-sum-box"><div class="n" style="color:#ec4899">$' + totalRev.toFixed(2) + '</div><div class="l">Revenue</div></div>';
+  
+  // Populate historical data per bay
+  const pHistBody = $('pHistBody');
+  pHistBody.innerHTML = '';
+  let histRows = [];
+  Object.keys(S.data).sort().forEach(function(date) {
+    if (date === S.date) return;
+    const day = S.data[date];
+    for (let i = 1; i <= S.set.bays; i++) {
+      const b = day[i];
+      if (b && b.vehicle) {
+        const rev = (parseFloat(b.parts)||0) + (parseFloat(b.labor)||0);
+        histRows.push({date: date, bay: i, b: b, rev: rev});
+      }
+    }
+  });
+  if (!histRows.length) {
+    pHistBody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#999">No historical data available</td></tr>';
+  } else {
+    histRows.forEach(function(h) {
+      const tr = el('tr');
+      tr.innerHTML = '<td>#' + String(h.bay).padStart(2,'0') + '</td><td>' + h.date + '</td><td>' + (h.b.jc||'-') + '</td><td>' + h.b.vehicle + '</td><td>' + (h.b.cust||'-') + '</td><td>' + h.b.status.toUpperCase() + '</td><td>' + (h.b.priority||'MEDIUM').toUpperCase() + '</td><td>' + (h.b.mech||'-') + '</td><td>$' + (h.b.parts||0) + '</td><td>$' + (h.b.labor||0) + '</td><td>$' + h.rev.toFixed(2) + '</td><td>' + (h.b.note||'-') + '</td>';
+      pHistBody.appendChild(tr);
+    });
+  }
+  
+  window.print();
+}
+
+function expPDF() { doPrint(); }
+
+function expWeeklyPDF() {
+  const end = new Date(S.date);
+  const start = new Date(S.date); start.setDate(start.getDate() - 6);
+  const num = S.set.prefix + 'WK-' + String(S.repNum).padStart(4, '0');
+  S.repNum++; save();
+  const doc = document.implementation.createHTMLDocument('Weekly Report');
+  const style = doc.createElement('style');
+  style.textContent = 'body{font-family:sans-serif;color:#1a1a1a;padding:24px}h1{margin-bottom:4px}table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:16px}th{background:#f0f0f0;padding:8px;border:1px solid #ccc}td{padding:8px;border:1px solid #ccc}tr:nth-child(even){background:#fafafa}.sum{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}.box{border:1px solid #ccc;padding:12px;text-align:center;border-radius:6px}.box .n{font-size:1.3rem;font-weight:800}';
+  doc.head.appendChild(style);
+  const body = doc.body;
+  body.innerHTML = '<h1>' + S.set.coName + '</h1><p><strong>Weekly Report:</strong> ' + num + '<br>' + start.toLocaleDateString() + ' to ' + end.toLocaleDateString() + '</p>';
+  const tbl = doc.createElement('table');
+  tbl.innerHTML = '<tr><th>Date</th><th>Bay</th><th>Vehicle</th><th>Customer</th><th>Status</th><th>Mechanic</th><th>Priority</th><th>Revenue</th></tr>';
+  let totalRev = 0, st = { idle:0, work:0, done:0, overdue:0 };
+  for (let i = 0; i <= 6; i++) {
+    const d = new Date(start); d.setDate(d.getDate() + i);
+    const ds = fmtDate(d);
+    const day = S.data[ds];
+    if (!day) continue;
+    for (let b = 1; b <= S.set.bays; b++) {
+      const job = day[b];
+      if (!job || !job.vehicle) continue;
+      const rev = (parseFloat(job.parts)||0) + (parseFloat(job.labor)||0);
+      totalRev += rev; st[job.status]++;
+      const tr = doc.createElement('tr');
+      tr.innerHTML = '<td>' + ds + '</td><td>#' + String(b).padStart(2,'0') + '</td><td>' + job.vehicle + '</td><td>' + (job.cust||'-') + '</td><td>' + job.status + '</td><td>' + (job.mech||'-') + '</td><td>' + (job.priority||'medium') + '</td><td>$' + rev.toFixed(2) + '</td>';
+      tbl.appendChild(tr);
+    }
+  }
+  body.appendChild(tbl);
+  const sum = doc.createElement('div');
+  sum.className = 'sum';
+  sum.innerHTML = '<div class="box"><div class="n" style="color:#16a34a">' + st.idle + '</div><div>Idle</div></div><div class="box"><div class="n" style="color:#d97706">' + st.work + '</div><div>Working</div></div><div class="box"><div class="n" style="color:#0891b2">' + st.done + '</div><div>Complete</div></div><div class="box"><div class="n" style="color:#dc2626">' + st.overdue + '</div><div>Overdue</div></div>';
+  body.appendChild(sum);
+  const revH2 = doc.createElement('h2');
+  revH2.textContent = 'Total Revenue: $' + totalRev.toFixed(2);
+  body.appendChild(revH2);
+  const w = window.open('', '_blank');
+  w.document.write(doc.documentElement.outerHTML);
+  w.document.close();
+  w.print();
+}
+
+function goTab(t) {
+  document.querySelectorAll('.pane').forEach(function(p) { p.classList.remove('on'); });
+  document.querySelectorAll('.tab').forEach(function(b) { b.classList.remove('on'); });
+  $('pane-' + t).classList.add('on');
+  const btn = document.querySelector('[data-t="' + t + '"]');
+  if (btn) btn.classList.add('on');
+  if (t === 'reports') renderCharts();
+  if (t === 'settings') applySet();
+  playSound('click');
+}
+
+function copyYesterday() {
+  const y = new Date(S.date); y.setDate(y.getDate() - 1);
+  const ys = fmtDate(y);
+  if (S.data[ys]) {
+    S.data[S.date] = JSON.parse(JSON.stringify(S.data[ys]));
+    save(); renderAll(); toast('Copied from yesterday');
+  } else { toast('No yesterday data'); }
+}
+
+function cloneToTomorrow() {
+  const t = new Date(S.date); t.setDate(t.getDate() + 1);
+  const ts = fmtDate(t);
+  if (S.data[S.date]) {
+    S.data[ts] = JSON.parse(JSON.stringify(S.data[S.date]));
+    Object.values(S.data[ts]).forEach(function(b) { if (b) b.linked = false; });
+    save(); toast('Cloned to ' + ts);
+  } else { toast('No data to clone'); }
+}
+
+function resetDay() {
+  if (!confirm('Reset all bays for this day?')) return;
+  S.data[S.date] = {};
+  for (let i = 1; i <= S.set.bays; i++) S.data[S.date][i] = blankBay();
+  save(); renderAll(); toast('Day reset');
+}
+
+init();
+</script>
+</body>
+</html>
